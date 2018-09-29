@@ -1,0 +1,49 @@
+#!/bin/bash
+
+rm wikidata-names.tsv
+
+curl "https://tools.wmflabs.org/mix-n-match/api.php?query=download2&catalogs=1793&columns=%7B%22exturl%22%3A0%2C%22username%22%3A0%2C%22aux%22%3A0%2C%22dates%22%3A0%2C%22location%22%3A0%2C%22multimatch%22%3A0%7D&hidden=%7B%22any_matched%22%3A0%2C%22firmly_matched%22%3A0%2C%22user_matched%22%3A0%2C%22unmatched%22%3A1%2C%22automatched%22%3A0%2C%22name_date_matched%22%3A0%2C%22aux_matched%22%3A0%2C%22no_multiple%22%3A0%7D&format=tab&as_file=1" > mixandmatch.tsv
+
+for i in `seq 1 3641` ; do
+
+echo -e `grep -P "^$i\t" names-numbers.tsv | cut -f 5`"\t"`grep -P "\t$i\tQ" mixandmatch.tsv | cut -f 4` >> wikidata-names.tsv
+
+# this is the full-name string and then Qid if known
+
+done
+
+####
+
+# 
+
+rm working/all-data.tsv
+
+for j in `seq 0 12253` ; do
+
+echo -e `grep -P "^$j\t" names-postings.tsv | cut -f 4` > working/slug
+
+echo -e  `grep -P "^$j\t" names-postings.tsv | cut -f 1`"\t"`grep -P "^$j\t" names-postings.tsv | cut -f 4`"\t"`grep -P "^$j\t" names-postings.tsv | cut -f 2`"\t"`grep -P "^$j\t" names-postings.tsv | cut -f 3`"\t"`grep -P "^$j\t" names-postings.tsv | cut -f 5`"\t"` grep -f working/slug wikidata-names.tsv | cut -f 2` >> working/all-data.tsv
+
+#nb number at front is for alignment
+
+done
+
+cp working/all-data.tsv all-data.tsv
+
+grep -P "\tQ\d" all-data.tsv > matched.tsv
+# only those matched to Wikidata
+
+cut -f 1 matched.tsv > working/matchlist
+grep -vxFf uploadedids working/matchlist > working/to-upload
+
+# uploadedids has a tracker for all those I've put up, taken from the spreadsheet
+# this now has the line IDs for everything that can be uploaded
+
+rm matched-to-upload.tsv
+
+for i in `cat working/to-upload` ; do grep -P "^$i\t" matched.tsv >> matched-to-upload.tsv ; done
+
+# this finds everything which is matched and ready to upload
+
+exit
+
